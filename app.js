@@ -125,30 +125,43 @@
     });
   }
 
-  // 1. FETCH PLAYLIST FROM SERVER PROXY
+  // 1. FETCH PLAYLIST FROM SERVER PROXY (WITH GITHUB PAGES STATIC FALLBACK)
   function fetchPlaylist(forceUrl) {
     el.guideCount.textContent = 'Connecting to proxy server...';
     const apiEndpoint = forceUrl ? `/api/refresh?url=${encodeURIComponent(forceUrl)}` : '/api/playlist';
 
     fetch(apiEndpoint)
-      .then(res => res.json())
-      .then(data => {
-        allChannels = data.channels || [];
-        el.guideCount.textContent = `${allChannels.length.toLocaleString()} Channels Loaded`;
-        
-        // Auto-generate dynamic category pills from playlist categories
-        buildCategoryPills(data.categories || []);
-        
-        filterAndRenderChannels();
-
-        // Resume last watched channel or play first Indian / Sports channel
-        resumeLastChannel();
+      .then(res => {
+        if (!res.ok) throw new Error('Backend proxy not found');
+        return res.json();
       })
+      .then(data => handleLoadedPlaylist(data))
       .catch(err => {
-        console.error('Error fetching playlist:', err);
-        el.guideCount.textContent = 'Server connecting... retrying in 2s';
-        setTimeout(() => fetchPlaylist(forceUrl), 2000);
+        // Fallback for static hosting like GitHub Pages
+        console.warn('Backend proxy not reachable, loading static playlist_cache.json...');
+        el.guideCount.textContent = 'Loading static channel cache...';
+        fetch('playlist_cache.json')
+          .then(res => {
+            if (!res.ok) throw new Error('Static cache missing');
+            return res.json();
+          })
+          .then(data => handleLoadedPlaylist(data))
+          .catch(cacheErr => {
+            console.error('Failed to load playlist:', cacheErr);
+            el.guideCount.textContent = 'Connecting... retrying in 3s';
+            setTimeout(() => fetchPlaylist(forceUrl), 3000);
+          });
       });
+  }
+
+  function handleLoadedPlaylist(data) {
+    allChannels = data.channels || [];
+    el.guideCount.textContent = `${allChannels.length.toLocaleString()} Channels Loaded`;
+    
+    // Auto-generate dynamic category pills from playlist categories
+    buildCategoryPills(data.categories || []);
+    filterAndRenderChannels();
+    resumeLastChannel();
   }
 
   function buildCategoryPills(cats) {
@@ -318,8 +331,9 @@
       activeCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
-    // Proxy stream URL
-    const proxyUrl = `/proxy/stream?url=${encodeURIComponent(ch.url)}`;
+    // Proxy stream URL (falls back to direct URL if hosted on static GitHub Pages)
+    const isLocalOrHosted = (window.location.port === '5000' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || !window.location.hostname.includes('github.io'));
+    const proxyUrl = isLocalOrHosted ? `/proxy/stream?url=${encodeURIComponent(ch.url)}` : ch.url;
     
     el.videoSpinner.style.display = 'flex';
     el.spinnerText.textContent = `Connecting to ${ch.name}...`;
