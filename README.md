@@ -52,7 +52,7 @@ NovaStream IPTV is a professional, high-performance web-based IPTV player and li
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/NovaStream-IPTV.git
+   git clone https://github.com/Govexam/NovaStream-IPTV.git
    cd NovaStream-IPTV
    ```
 
