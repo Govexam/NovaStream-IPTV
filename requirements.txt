@@ -1,0 +1,7 @@
+# NovaStream IPTV Server
+# Powered entirely by Python Standard Library:
+# - http.server (ThreadingHTTPServer)
+# - urllib.request & urllib.parse
+# - json, socket, time, re, sys, os
+#
+# No pip installations required! Compatible with Python 3.8+

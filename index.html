@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>NovaStream IPTV — Premium Live TV & EPG Player</title>
+  <meta name="description" content="Ultimate TiviMate & OTT Navigator Style IPTV Player with Live EPG, 20,000+ Channels, 4K UHD, Sports, and Movies.">
+
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- HLS.js for Live Streaming -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.7/dist/hls.min.js"></script>
+
+  <link rel="stylesheet" href="style.css?v=4">
+  <style>
+    /* High-density channel card layout */
+    .channel-card {
+      min-height: 68px !important;
+      height: 68px !important;
+      flex-shrink: 0 !important;
+      display: flex !important;
+      align-items: center !important;
+      padding: 8px 12px !important;
+      box-sizing: border-box !important;
+    }
+    .card-details {
+      flex: 1 !important;
+      min-width: 0 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: center !important;
+      gap: 3px !important;
+      overflow: hidden !important;
+    }
+    .card-name-row {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      gap: 6px !important;
+      line-height: 1.25 !important;
+      min-height: 18px !important;
+    }
+    .card-channel-name {
+      font-size: 13.5px !important;
+      font-weight: 700 !important;
+      color: #ffffff !important;
+      line-height: 1.25 !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      display: block !important;
+    }
+    .card-group-name {
+      font-size: 11px !important;
+      color: #00d2ff !important;
+      line-height: 1.2 !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      display: block !important;
+    }
+    .card-epg-row {
+      display: flex !important;
+      align-items: center !important;
+      gap: 6px !important;
+      min-height: 14px !important;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+
+    <!-- TOP HEADER -->
+    <header class="top-header">
+      
+      <!-- Brand & Status -->
+      <div class="brand-group" onclick="showCategory('ALL')" title="NovaStream Live IPTV">
+        <div class="brand-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#050b14" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+        </div>
+        <span class="brand-title">NOVASTREAM</span>
+        <div class="live-pulse-badge">
+          <span class="pulse-dot"></span>
+          <span>LIVE</span>
+        </div>
+      </div>
+
+      <!-- Search Box with Keyboard Shortcut -->
+      <div class="header-search">
+        <span class="search-icon-left">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </span>
+        <input type="text" id="channelSearch" class="search-input" placeholder="Search 20,000+ channels, sports, movies..." autocomplete="off">
+        <span class="search-shortcut-badge" id="searchKeyBadge">/</span>
+        <button class="search-clear-btn" id="searchClearBtn" onclick="clearSearch()">✕</button>
+      </div>
+
+      <!-- Header Tools & Modals -->
+      <div class="header-actions">
+        <button class="icon-btn" onclick="openEpgModal()" title="Electronic Program Guide (EPG)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </button>
+        <button class="icon-btn" onclick="openSettingsModal()" title="Playlist & EPG Settings">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+        <button class="icon-btn" onclick="toggleKeyboardModal()" title="Keyboard Shortcuts (?)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </button>
+      </div>
+
+    </header>
+
+    <!-- MAIN VIEWPORT: CINEMA ON LEFT, GUIDE ON RIGHT -->
+    <main class="main-viewport">
+
+      <!-- LEFT: CINEMA VIDEO STAGE -->
+      <section class="cinema-stage" id="cinemaStage">
+        
+        <!-- Ambient Backlight Reflection -->
+        <div class="ambient-glow" id="ambientGlow"></div>
+
+        <!-- Video Player Element -->
+        <div class="video-wrapper" id="videoWrapper">
+          <video id="videoPlayer" playsinline autoplay></video>
+
+          <!-- Loading Spinner Overlay -->
+          <div class="video-spinner-overlay" id="videoSpinner" style="display:none;">
+            <div class="spinner-icon"></div>
+            <span class="spinner-text" id="spinnerText">Buffering Stream...</span>
+          </div>
+
+          <!-- OSD (On-Screen Display) Header Banner -->
+          <div class="osd-overlay" id="osdOverlay">
+            <div class="osd-channel-card">
+              <div class="osd-logo-box">
+                <img id="osdLogo" class="osd-logo-img" src="" alt="" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'40\' height=\'40\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%2300d2ff\' stroke-width=\'2\'><rect x=\'2\' y=\'7\' width=\'20\' height=\'15\' rx=\'2\' ry=\'2\'/><polyline points=\'17 2 12 7 7 2\'/></svg>'">
+              </div>
+              <div class="osd-info-box">
+                <div class="osd-title-row">
+                  <span class="osd-channel-num" id="osdNumber">#1</span>
+                  <span class="osd-channel-name" id="osdName">Select Channel</span>
+                  <span class="osd-category-tag" id="osdCategory">LIVE</span>
+                </div>
+                <div class="osd-epg-box">
+                  <span class="osd-program-name" id="osdProgram">Live Broadcast</span>
+                  <div class="osd-time-bar-wrapper">
+                    <div class="osd-progress-bar">
+                      <div class="osd-progress-fill" id="osdProgressFill"></div>
+                    </div>
+                    <span class="osd-time-text" id="osdTime">Live 1080p</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="osd-badges-right">
+              <span class="stream-badge" id="streamQualityBadge">HD 1080p</span>
+            </div>
+          </div>
+
+          <!-- Cinema Controls Bar (Bottom) -->
+          <div class="cinema-controls-bar" id="controlsBar">
+            
+            <!-- Left Controls: Play/Pause, Channel Zapping -->
+            <div class="controls-left">
+              <button class="control-btn" onclick="zapChannel(-1)" title="Previous Channel (⏮️ [)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg>
+              </button>
+              
+              <button class="control-btn btn-play-pause" id="btnPlayPause" onclick="togglePlay()" title="Play / Pause (Space)">
+                <svg id="playIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display:none;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                <svg id="pauseIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+              </button>
+
+              <button class="control-btn" onclick="zapChannel(1)" title="Next Channel (⏭️ ])">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+              </button>
+
+              <!-- Volume & Boost -->
+              <div class="volume-group">
+                <button class="control-btn" style="width:28px;height:28px;background:none;border:none;" onclick="toggleMute()" id="muteBtn" title="Mute (M)">
+                  <svg id="volHighIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                  <svg id="volMuteIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;"><line x1="1" y1="1" x2="23" y2="23"/><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/></svg>
+                </button>
+                <input type="range" class="volume-slider" id="volumeSlider" min="0" max="1" step="0.05" value="1" oninput="setVolume(this.value)">
+                <button class="audio-boost-btn" id="audioBoostBtn" onclick="toggleAudioBoost()" title="Audio Boost (200%)">+200%</button>
+              </div>
+            </div>
+
+            <!-- Center Controls: Current Channel Display -->
+            <div class="controls-center">
+              <span id="playingTitleBar" style="font-size:13px;font-weight:600;color:#e2e8f0;">No Channel Selected</span>
+            </div>
+
+            <!-- Right Controls: Aspect Ratio, PiP, Fullscreen -->
+            <div class="controls-right">
+              <button class="aspect-pill-btn" id="aspectRatioBtn" onclick="cycleAspectRatio()" title="Aspect Ratio (A)">
+                16:9
+              </button>
+              <button class="control-btn" onclick="togglePiP()" title="Picture in Picture (P)">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><rect x="12" y="9" width="8" height="6" rx="1"/></svg>
+              </button>
+              <button class="control-btn" onclick="toggleFullscreen()" title="Fullscreen (F)">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+              </button>
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- RIGHT: CHANNEL GUIDE & TIVIMATE SIDEBAR -->
+      <aside class="guide-sidebar" id="guideSidebar">
+        
+        <!-- Category Filter Tabs Bar (Horizontal Scroll) -->
+        <div class="category-tabs-bar" id="categoryTabs">
+          <button class="cat-pill active" onclick="filterCategory('ALL')">🌟 All</button>
+          <button class="cat-pill" onclick="filterCategory('FAV')">⭐ Favorites</button>
+          <button class="cat-pill" onclick="filterCategory('RECENT')">🕒 Recent</button>
+          <button class="cat-pill" onclick="filterCategory('INDIA')">🇮🇳 India</button>
+          <button class="cat-pill" onclick="filterCategory('SPORTS')">🏏 Sports</button>
+          <button class="cat-pill" onclick="filterCategory('4K UHD')">📺 4K UHD</button>
+          <button class="cat-pill" onclick="filterCategory('MOVIES')">🎬 Movies</button>
+          <button class="cat-pill" onclick="filterCategory('NEWS')">📰 News</button>
+          <button class="cat-pill" onclick="filterCategory('USA')">🇺🇸 USA</button>
+          <button class="cat-pill" onclick="filterCategory('UK')">🇬🇧 UK</button>
+        </div>
+
+        <!-- Guide Subheader / Sort & Counter -->
+        <div class="guide-meta-bar">
+          <span class="guide-channel-count" id="guideCount">Loading channels...</span>
+          <select class="guide-sort-select" id="sortSelect" onchange="changeSort(this.value)">
+            <option value="default">Default Order</option>
+            <option value="name">Name (A-Z)</option>
+            <option value="group">By Category</option>
+          </select>
+        </div>
+
+        <!-- Virtualized Channel List Scroll -->
+        <div class="channel-list-scroll" id="channelList">
+          <!-- Rendered dynamically -->
+        </div>
+
+      </aside>
+
+    </main>
+
+  </div>
+
+  <!-- ================= MODALS ================= -->
+
+  <!-- 1. SETTINGS MODAL -->
+  <div class="modal-backdrop" id="settingsModal" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Playlist &amp; Server Settings</h3>
+        <button class="modal-close-btn" onclick="closeSettingsModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">M3U / M3U8 Playlist URL:</label>
+          <input type="text" id="m3uInput" class="form-input" value="https://tataplaym3u.zonmp.net/">
+        </div>
+        <div class="form-group">
+          <label class="form-label">XMLTV EPG (TV Guide) URL:</label>
+          <input type="text" id="epgInput" class="form-input" placeholder="https://example.com/epg.xml.gz">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Stream User-Agent:</label>
+          <input type="text" id="uaInput" class="form-input" value="VLC/3.0.18 LibVLC/3.0.18" readonly>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="reloadPlaylistFromServer()">🔄 Clear &amp; Reload Cache</button>
+        <button class="btn-primary" onclick="saveSettings()">Save &amp; Connect</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. KEYBOARD SHORTCUTS MODAL -->
+  <div class="modal-backdrop" id="shortcutsModal" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Keyboard &amp; Remote Shortcuts</h3>
+        <button class="modal-close-btn" onclick="toggleKeyboardModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px;">
+          <div><kbd style="background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:4px;">▲ / ▼</kbd> Channel Up / Down</div>
+          <div><kbd style="background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:4px;">Enter</kbd> Play Channel</div>
+          <div><kbd style="background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:4px;">Space</kbd> Play / Pause</div>
+          <div><kbd style="background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:4px;">F</kbd> Fullscreen</div>
+          <div><kbd style="background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:4px;">M</kbd> Mute / Unmute</div>
+          <div><kbd style="background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:4px;">P</kbd> Picture in Picture</div>
+          <div><kbd style="background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:4px;">A</kbd> Aspect Ratio</div>
+          <div><kbd style="background:rgba(255,255,255,0.1);padding:3px 8px;border-radius:4px;">/</kbd> Instant Search</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary" onclick="toggleKeyboardModal()">Got It</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. FULL EPG MODAL -->
+  <div class="modal-backdrop" id="epgModal" style="display:none;">
+    <div class="modal-card" style="max-width:750px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Live Electronic Program Guide (EPG)</h3>
+        <button class="modal-close-btn" onclick="closeEpgModal()">✕</button>
+      </div>
+      <div class="modal-body" id="epgModalBody">
+        <p style="color:var(--text-secondary);font-size:13px;">Live timeline generated from broadcast Maxims and intelligent scheduling:</p>
+        <div id="epgTimelineGrid" style="display:flex;flex-direction:column;gap:8px;max-height:400px;overflow-y:auto;">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary" onclick="closeEpgModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
