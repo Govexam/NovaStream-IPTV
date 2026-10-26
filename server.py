@@ -14,7 +14,7 @@ from urllib.error import URLError, HTTPError
 
 sys.stdout.reconfigure(encoding='utf-8')
 
-PORT = 5000
+PORT = int(os.environ.get('PORT', 5000))
 DEFAULT_M3U = "https://tataplaym3u.zonmp.net/"
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CACHE_FILE = os.path.join(BASE_DIR, "playlist_cache.json")

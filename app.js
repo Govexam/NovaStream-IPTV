@@ -331,9 +331,15 @@
       activeCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
-    // Proxy stream URL (falls back to direct URL if hosted on static GitHub Pages)
-    const isLocalOrHosted = (window.location.port === '5000' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || !window.location.hostname.includes('github.io'));
-    const proxyUrl = isLocalOrHosted ? `/proxy/stream?url=${encodeURIComponent(ch.url)}` : ch.url;
+    // Proxy stream URL (supports local server, cloud proxy, or static fallback)
+    const savedBackend = (localStorage.getItem('novastream_backend_url') || '').trim().replace(/\/+$/, '');
+    let proxyUrl = '';
+    if (savedBackend) {
+      proxyUrl = `${savedBackend}/proxy/stream?url=${encodeURIComponent(ch.url)}`;
+    } else {
+      const isLocalOrHosted = (window.location.port === '5000' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || !window.location.hostname.includes('github.io'));
+      proxyUrl = isLocalOrHosted ? `/proxy/stream?url=${encodeURIComponent(ch.url)}` : ch.url;
+    }
     
     el.videoSpinner.style.display = 'flex';
     el.spinnerText.textContent = `Connecting to ${ch.name}...`;
@@ -392,12 +398,28 @@
                 setTimeout(() => { if (hls) hls.startLoad(); }, 1500);
               } else {
                 el.videoSpinner.style.display = 'flex';
-                el.spinnerText.innerHTML = `
-                  <div style="display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:12px;">
-                    <span style="color:#ff4757;font-weight:700;font-size:15px;">⚠️ Stream Offline or Busy</span>
-                    <span style="font-size:12px;color:rgba(255,255,255,0.7);max-width:280px;">Upstream provider rate-limited or channel feed offline.</span>
-                    <button class="osd-btn-accent" style="margin-top:6px;padding:8px 18px;border-radius:20px;cursor:pointer;background:linear-gradient(135deg, #00d2ff, #7928ca);color:#fff;border:none;font-weight:700;" onclick="zapChannel(1)">Next Channel ▶</button>
-                  </div>`;
+                const isGithub = window.location.hostname.includes('github.io');
+                const hasBackend = !!(localStorage.getItem('novastream_backend_url') || '').trim();
+                if (isGithub && !hasBackend) {
+                  el.spinnerText.innerHTML = `
+                    <div style="display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:16px;">
+                      <span style="color:#ffb703;font-weight:700;font-size:15px;">⚠️ Browser Security Notice (GitHub Pages)</span>
+                      <span style="font-size:12px;color:rgba(255,255,255,0.85);max-width:320px;line-height:1.4;">
+                        GitHub Pages par browser direct video streams block karta hai (CORS &amp; Mixed Content).
+                      </span>
+                      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:6px;">
+                        <button class="osd-btn-accent" style="padding:7px 14px;border-radius:18px;cursor:pointer;background:linear-gradient(135deg, #00d2ff, #7928ca);color:#fff;border:none;font-size:12px;font-weight:700;" onclick="openSettingsModal()">⚙️ Connect Backend</button>
+                        <button class="osd-btn-accent" style="padding:7px 14px;border-radius:18px;cursor:pointer;background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);font-size:12px;font-weight:600;" onclick="copyPlaylistUrl()">📋 Copy M3U for VLC</button>
+                      </div>
+                    </div>`;
+                } else {
+                  el.spinnerText.innerHTML = `
+                    <div style="display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:12px;">
+                      <span style="color:#ff4757;font-weight:700;font-size:15px;">⚠️ Stream Offline or Busy</span>
+                      <span style="font-size:12px;color:rgba(255,255,255,0.7);max-width:280px;">Upstream provider rate-limited or channel feed offline.</span>
+                      <button class="osd-btn-accent" style="margin-top:6px;padding:8px 18px;border-radius:20px;cursor:pointer;background:linear-gradient(135deg, #00d2ff, #7928ca);color:#fff;border:none;font-weight:700;" onclick="zapChannel(1)">Next Channel ▶</button>
+                    </div>`;
+                }
               }
               break;
             case Hls.ErrorTypes.MEDIA_ERROR:
@@ -701,7 +723,12 @@
   };
 
   // 13. MODALS LOGIC
-  window.openSettingsModal = function () { el.settingsModal.style.display = 'flex'; };
+  window.openSettingsModal = function () {
+    const savedBackend = localStorage.getItem('novastream_backend_url') || '';
+    const backendInput = document.getElementById('backendInput');
+    if (backendInput) backendInput.value = savedBackend;
+    el.settingsModal.style.display = 'flex';
+  };
   window.closeSettingsModal = function () { el.settingsModal.style.display = 'none'; };
   
   window.toggleKeyboardModal = function () {
@@ -714,6 +741,15 @@
     renderEpgTimeline();
   };
   window.closeEpgModal = function () { el.epgModal.style.display = 'none'; };
+
+  window.copyPlaylistUrl = function () {
+    const url = 'https://tataplaym3u.zonmp.net/';
+    navigator.clipboard.writeText(url).then(() => {
+      alert('Copied Tata Play M3U URL!\nPaste this into VLC, TiviMate, or OTT Navigator.');
+    }).catch(() => {
+      prompt('Copy this M3U URL for VLC/TiviMate/OTT Navigator:', url);
+    });
+  };
 
   function renderEpgTimeline() {
     let html = '';
@@ -743,9 +779,16 @@
 
   window.saveSettings = function () {
     const newM3u = document.getElementById('m3uInput').value.trim();
+    const backendInput = document.getElementById('backendInput');
+    if (backendInput) {
+      localStorage.setItem('novastream_backend_url', backendInput.value.trim());
+    }
     closeSettingsModal();
     if (newM3u) {
       fetchPlaylist(newM3u);
+    }
+    if (currentChannel) {
+      playChannel(currentChannel);
     }
   };
 
